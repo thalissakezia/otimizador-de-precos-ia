@@ -78,7 +78,7 @@ def processar_dataframe(df):
     }
     
     return {
-        target: next((c for c in df.columns if any(opt in c.lower() for opt in options), None)
+        target: next((c for c in df.columns if any(opt in c.lower() for opt in options)), None)
         for target, options in col_mapping.items()
     }
 
