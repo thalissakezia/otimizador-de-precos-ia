@@ -1,7 +1,7 @@
 streamlit==1.27.2
 pandas==1.5.3
-scikit-learn==1.2.2
+scikit-learn==1.4.2         
 joblib==1.2.0
 langchain==0.1.20
-langchain-community==0.0.35
+langchain-community==0.0.38  
 openai==1.30.1
