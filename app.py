@@ -6,8 +6,8 @@ import numpy as np
 import joblib
 from datetime import datetime
 
-from langchain_groq import ChatGroq  # <- ajuste aqui!
-from langchain.agents import create_pandas_dataframe_agent
+from langchain_groq import ChatGroq
+from langchain_experimental.agents import create_pandas_dataframe_agent  # <- ajuste aqui!
 
 # Aviso sobre versão do Python
 if not sys.version.startswith("3.11"):
