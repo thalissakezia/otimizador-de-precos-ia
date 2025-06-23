@@ -13,17 +13,10 @@ from langchain.agents import create_pandas_dataframe_agent
 # Environment Verification
 # ----------------------
 def verify_environment():
-    try:
-        import numpy as np
-        import pandas as pd
-        if np.__version__ != "1.26.4" or pd.__version__ != "2.2.2":
-            st.warning("Incorrect versions detected. Reinstalling dependencies...")
-            subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
-            st.rerun()
-    except ImportError:
-        st.error("Missing dependencies. Installing automatically...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
-        st.rerun()
+    import numpy as np
+    import pandas as pd
+    if not (np.__version__.startswith("1.") and pd.__version__.startswith("2.")):
+        st.warning(f"Versões detectadas: numpy {np.__version__}, pandas {pd.__version__}. Se encontrar erros, tente ajustar o ambiente.")
 
 verify_environment()
 
@@ -58,7 +51,7 @@ def carregar_modelo():
 def inicializar_chat_model():
     """Inicializa o modelo de chat Groq"""
     try:
-        groq_key = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
+        groq_key = os.getenv("GROQ_API_KEY") or st.secrets["GROQ_API_KEY"]
         if not groq_key:
             st.error("🚨 Chave API GROQ não encontrada. Configure GROQ_API_KEY.")
             st.stop()
@@ -177,4 +170,7 @@ def main():
         st.info("📤 Envie um arquivo CSV para começar.")
 
 if __name__ == "__main__":
+    if not sys.version.startswith("3.11"):
+        import streamlit as st
+        st.warning("Recomenda-se Python 3.11 para evitar problemas de compatibilidade.")
     main()
