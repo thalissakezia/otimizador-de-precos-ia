@@ -1,5 +1,8 @@
-pandas
-scikit-learn
-xgboost
-streamlit
-joblib
+streamlit==1.25.0
+pandas==1.5.3
+scikit-learn==1.2.2
+xgboost==1.7.6
+joblib==1.2.0
+langchain==0.0.232
+openai==0.27.6
+pandasai==0.4.1
