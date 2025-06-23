@@ -1,6 +1,6 @@
 streamlit==1.46.0
 pandas==2.2.2
-numpy==2.0.0
+numpy==1.26.4  # Versão compatível com langchain 0.1.20
 scikit-learn==1.5.0
 joblib==1.4.2
 langchain==0.1.20
