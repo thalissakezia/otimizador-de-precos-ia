@@ -55,6 +55,3 @@ git clone https://github.com/seu-usuario/otimizador-de-precos-ia.git
 cd otimizador-de-precos-ia
 pip install -r requirements.txt
 streamlit run app.py
-
-Feito com ❤️ para ajudar pequenos negócios a crescer com tecnologia.
-
