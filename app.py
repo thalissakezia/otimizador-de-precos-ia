@@ -3,7 +3,6 @@ import sys
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 from datetime import datetime
 
 from langchain_groq import ChatGroq
@@ -19,16 +18,21 @@ if not (np.__version__.startswith("1.") and pd.__version__.startswith("2.")):
 
 @st.cache_resource
 def carregar_modelo():
+    import joblib
+    import streamlit as st
+    import os
+
+    modelo_path = "modelo_otimizador_preco.pkl"
+    if not os.path.exists(modelo_path):
+        st.error(f"Arquivo '{modelo_path}' não encontrado na pasta do app.")
+        st.stop()
     try:
-        modelo = joblib.load("modelo_otimizador_preco.pkl")
+        modelo = joblib.load(modelo_path)
         st.toast("Modelo carregado com sucesso!", icon="✅")
         return modelo
-    except FileNotFoundError:
-        st.error("Arquivo do modelo não encontrado. Verifique se 'modelo_otimizador_preco.pkl' existe.")
-        return None
     except Exception as e:
-        st.error(f"Erro ao carregar o modelo: {str(e)}")
-        return None
+        st.error(f"Erro ao carregar o modelo: {e}")
+        st.stop()
 
 @st.cache_resource
 def inicializar_chat_model():
