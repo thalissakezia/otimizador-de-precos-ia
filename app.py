@@ -1,41 +1,24 @@
 import os
 import sys
-import subprocess
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 from datetime import datetime
 
 from langchain_community.chat_models import ChatGroq
 from langchain.agents import create_pandas_dataframe_agent
 
-# ----------------------
-# Environment Verification
-# ----------------------
-def verify_environment():
-    import numpy as np
-    import pandas as pd
-    if not (np.__version__.startswith("1.") and pd.__version__.startswith("2.")):
-        st.warning(f"Versões detectadas: numpy {np.__version__}, pandas {pd.__version__}. Se encontrar erros, tente ajustar o ambiente.")
+# Aviso sobre versão do Python
+if not sys.version.startswith("3.11"):
+    st.warning("Recomenda-se Python 3.11 para evitar problemas de compatibilidade.")
 
-verify_environment()
-
-# ----------------------
-# Configurações Iniciais
-# ----------------------
-st.set_page_config(
-    page_title="Otimizador de Preços IA",
-    layout="wide",
-    page_icon="🧠"
-)
-
-# ----------------------
-# Funções Utilitárias
-# ----------------------
+# Aviso sobre versões de pacotes
+if not (np.__version__.startswith("1.") and pd.__version__.startswith("2.")):
+    st.warning(f"Versões detectadas: numpy {np.__version__}, pandas {pd.__version__}. Se encontrar erros, ajuste o ambiente.")
 
 @st.cache_resource
 def carregar_modelo():
-    """Carrega o modelo de otimização de preços"""
     try:
         modelo = joblib.load("modelo_otimizador_preco.pkl")
         st.toast("Modelo carregado com sucesso!", icon="✅")
@@ -49,11 +32,10 @@ def carregar_modelo():
 
 @st.cache_resource
 def inicializar_chat_model():
-    """Inicializa o modelo de chat Groq"""
     try:
         groq_key = os.getenv("GROQ_API_KEY") or st.secrets["GROQ_API_KEY"]
         if not groq_key:
-            st.error("🚨 Chave API GROQ não encontrada. Configure GROQ_API_KEY.")
+            st.error("Chave da API GROQ não encontrada. Configure a variável de ambiente 'GROQ_API_KEY' ou adicione em st.secrets.")
             st.stop()
         return ChatGroq(model_name="mixtral-8x7b-32768", groq_api_key=groq_key)
     except Exception as e:
@@ -61,7 +43,6 @@ def inicializar_chat_model():
         st.stop()
 
 def processar_dataframe(df):
-    """Processa o dataframe e identifica colunas relevantes"""
     col_mapping = {
         'preco_custo': ['custo', 'preço_custo', 'cost'],
         'vendas': ['vendas', 'sales', 'quantidade'],
@@ -69,21 +50,15 @@ def processar_dataframe(df):
         'categoria': ['categoria', 'tipo', 'category', 'type'],
         'data': ['data', 'date', 'datetime']
     }
-    
     return {
         target: next((c for c in df.columns if any(opt in c.lower() for opt in options)), None)
         for target, options in col_mapping.items()
     }
 
-# ----------------------
-# Interface do App
-# ----------------------
-
 def main():
     st.title("🧠 Otimizador de Preços com IA")
     st.caption("Análise de preços + Chat Inteligente (via Groq)")
 
-    # Upload do CSV
     uploaded_file = st.file_uploader("📂 Envie seu arquivo CSV", type=["csv"])
 
     if uploaded_file is not None:
@@ -94,83 +69,46 @@ def main():
             st.error(f"Erro ao ler o CSV: {str(e)}")
             st.stop()
 
-        # Mostrar dados
         with st.expander("📊 Visualizar dados", expanded=True):
-            st.dataframe(df.head(3))
+            st.dataframe(df.head(100))
 
-        # Processar colunas
         cols = processar_dataframe(df)
         missing_cols = [k for k, v in cols.items() if v is None]
-        
+
         if missing_cols:
-            st.warning(
-                f"⚠️ Colunas não encontradas: {', '.join(missing_cols)}\n"
-                "Certifique-se de que seu CSV contém colunas com nomes similares."
-            )
+            st.error(f"Colunas não encontradas no CSV: {', '.join(missing_cols)}. Renomeie ou ajuste seu arquivo.")
             st.stop()
 
-        # Carregar modelo
         modelo = carregar_modelo()
         if modelo is None:
             st.stop()
 
-        # Pré-processamento
         try:
-            df[cols['data']] = pd.to_datetime(df[cols['data']], errors="coerce")
-            df["dia_do_ano"] = df[cols['data']].dt.dayofyear
-            df[cols['categoria']] = df[cols['categoria']].astype('category').cat.codes
-
-            # Previsões
-            X = df[[cols['preco_custo'], cols['vendas'], cols['concorrencia'], cols['categoria'], "dia_do_ano"]]
-            df["preco_sugerido"] = modelo.predict(X)
-
-            # Resultados
-            st.success("✅ Preços sugeridos calculados!")
-            st.dataframe(df[[cols['preco_custo'], cols['concorrencia'], "preco_sugerido"]].head())
-
-            # Download
-            csv_resultado = df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="⬇️ Baixar CSV com preços sugeridos",
-                data=csv_resultado,
-                file_name=f"precos_sugeridos_{datetime.now().strftime('%Y%m%d')}.csv",
-                mime="text/csv"
-            )
-
-            # Chat IA
-            st.divider()
-            st.subheader("💬 Pergunte sobre seus dados")
-            
-            if "agent" not in st.session_state:
-                with st.spinner("Inicializando IA..."):
-                    try:
-                        chat_model = inicializar_chat_model()
-                        st.session_state.agent = create_pandas_dataframe_agent(
-                            chat_model, df, verbose=False
-                        )
-                    except Exception as e:
-                        st.error(f"Falha ao iniciar o agente: {str(e)}")
-                        st.stop()
-
-            if prompt := st.chat_input("Ex: Qual produto tem o maior markup?"):
-                with st.chat_message("user"):
-                    st.write(prompt)
-                
-                with st.spinner("Processando..."):
-                    try:
-                        resposta = st.session_state.agent.run(prompt)
-                        with st.chat_message("assistant"):
-                            st.write(resposta)
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)}")
-
+            df_proc = df.dropna()
         except Exception as e:
-            st.error(f"Erro durante o processamento: {str(e)}")
+            st.error(f"Erro no pré-processamento: {str(e)}")
+            st.stop()
+
+        try:
+            X = df_proc[[cols['preco_custo'], cols['concorrencia'], cols['categoria']]]
+            pred = modelo.predict(X)
+            st.success("Previsão realizada com sucesso!")
+            st.write("Primeiras previsões:", pred[:10])
+        except Exception as e:
+            st.error(f"Erro ao rodar o modelo: {str(e)}")
+
+        if st.checkbox("Ativar Chat IA"):
+            agent = create_pandas_dataframe_agent(
+                inicializar_chat_model(),
+                df,
+                verbose=True
+            )
+            pergunta = st.text_input("Pergunte algo sobre seus dados:")
+            if pergunta:
+                resposta = agent.run(pergunta)
+                st.info(resposta)
     else:
         st.info("📤 Envie um arquivo CSV para começar.")
 
 if __name__ == "__main__":
-    if not sys.version.startswith("3.11"):
-        import streamlit as st
-        st.warning("Recomenda-se Python 3.11 para evitar problemas de compatibilidade.")
     main()
