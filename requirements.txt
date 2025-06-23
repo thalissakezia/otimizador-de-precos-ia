@@ -8,3 +8,6 @@ langchain-community==0.0.38
 httpx==0.27.0
 tqdm==4.66.2
 aiohttp==3.9.5
+cython==3.0.10
+scipy==1.13.1; python_version < '3.13'
+scipy>=1.13.1; python_version >= '3.13'
