@@ -1,29 +1,31 @@
 import os
+import sys
+import subprocess
 import streamlit as st
 import pandas as pd
 import joblib
 from datetime import datetime
-import sys
-import subprocess
-import streamlit as st
 
+from langchain_community.chat_models import ChatGroq
+from langchain.agents import create_pandas_dataframe_agent
+
+# ----------------------
+# Environment Verification
+# ----------------------
 def verify_environment():
     try:
         import numpy as np
         import pandas as pd
         if np.__version__ != "1.26.4" or pd.__version__ != "2.2.2":
-            st.warning("Versões incorretas detectadas. Reinstalando dependências...")
+            st.warning("Incorrect versions detected. Reinstalling dependencies...")
             subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
             st.rerun()
     except ImportError:
-        st.error("Dependências faltando. Instalando automaticamente...")
+        st.error("Missing dependencies. Installing automatically...")
         subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
         st.rerun()
 
 verify_environment()
-
-from langchain_community.chat_models import ChatGroq
-from langchain.agents import create_pandas_dataframe_agent
 
 # ----------------------
 # Configurações Iniciais
